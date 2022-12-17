@@ -1,75 +1,55 @@
-import { Component } from 'react';
+import { useEffect, useState } from 'react';
 import { Section } from 'components/Section/Section';
 import { Forms } from 'components/Forms/Forms';
 import { Contacts } from 'components/Contacts/Contacts';
 
-export class App extends Component {
-  state = {
-    contacts: [],
-    filter: '',
-  };
+export const App = () => {
+  const [contacts, setContacts] = useState(() => {
+    const saveContacts = localStorage.getItem('contacts');
+    return saveContacts ? JSON.parse(saveContacts) : [];
+  });
+  const [filter, setFilter] = useState('');
 
-  componentDidMount() {
-    const saveContacts = JSON.parse(localStorage.getItem('contacts'));
-    this.setState({
-      contacts: saveContacts ? saveContacts : [],
-    });
-  }
+  const filterContacts = contacts.length
+    ? contacts.filter(contact => contact.name.toLowerCase().includes(filter))
+    : [];
 
-  componentDidUpdate(prevProps, prevState) {
-    if (prevState.contacts !== this.state.contacts)
-      localStorage.setItem('contacts', JSON.stringify(this.state.contacts));
-  }
+  useEffect(() => {
+    localStorage.setItem('contacts', JSON.stringify(contacts));
+  }, [contacts]);
 
-  addContact = data => {
-    if (
-      this.state.contacts.length &&
-      this.state.contacts.find(item => item.name === data.name)
-    )
+  const addContact = data => {
+    if (contacts.length && contacts.find(item => item.name === data.name))
       return alert(
         'Are you sure about that? "' + data.name + '" is already in contacts.'
       );
 
-    this.setState(prevState => {
-      return {
-        contacts: [...prevState.contacts, data],
-      };
-    });
+    setContacts(state => [...state, data]);
   };
 
-  selectedContacts = text => {
-    this.setState({
-      filter: text.toLowerCase(),
-    });
+  const selectedContacts = text => {
+    setFilter(text.toLowerCase());
   };
 
-  deleteContact = id => {
-    this.setState({
-      contacts: this.state.contacts.filter(contact => contact.id !== id),
-    });
+  const deleteContact = id => {
+    setContacts(state => state.filter(contact => contact.id !== id));
   };
 
-  render() {
-    const filterContacts = this.state.contacts.filter(contact =>
-      contact.name.toLowerCase().includes(this.state.filter)
-    );
-
-    return (
-      <Section>
-        <Section title="Phonebook">
-          <Forms submit={this.addContact} />
-        </Section>
-
-        {this.state.contacts.length > 0 && (
-          <Section title="Contacts">
-            <Contacts
-              contacts={filterContacts}
-              onSearch={this.selectedContacts}
-              onDelete={this.deleteContact}
-            />
-          </Section>
-        )}
+  return (
+    <Section>
+      <Section title="Phonebook">
+        <Forms submit={addContact} />
       </Section>
-    );
-  }
-}
+
+      {contacts.length > 0 && (
+        <Section title="Contacts">
+          <Contacts
+            contacts={filterContacts}
+            onSearch={selectedContacts}
+            onDelete={deleteContact}
+          />
+        </Section>
+      )}
+    </Section>
+  );
+};
